@@ -1,10 +1,7 @@
-#!/bin/bash
-
+﻿#!/bin/bash
 # Updating /etc/lvm/lvm.conf
-
 echo "Updating LVM filters"
 sudo sed -i -e 's/filter = \[ "a\/.*\/" \]/filter = \[ "r|\/dev\/sdb|", "r|\/dev\/disk\/*|", "r|\/dev\/block\/*|", "a|.*|" \]/g' /etc/lvm/lvm.conf
-
 # filter = [ "a/.*/" ]
 
 # filter = [ "r|/dev/sdb|", "r|/dev/disk/*|", "r|/dev/block/*|", "a|.*|" ]

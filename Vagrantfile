@@ -4,21 +4,41 @@
 dhostname1 = "node1"
 dhostname2 = "node2"
 
-Vagrant::Config.run do |config|
 
-  config.vm.define :node1 do |n1_config|
+Vagrant.configure("2") do |config|
+  config.vm.define "node1" do |n1_config|
+  
+  #config.vbguest.iso_path = "http://download.virtualbox.org/virtualbox/4.2.0/VBoxGuestAdditions_4.2.0.iso"
+  #config.vbguest.auto_update = false
+  #config.vbguest.no_remote = true
+	
+		
     n1_config.vm.box = "precise64"
-    n1_config.vm.box_url = "http://files.vagrantup.com/precise64.box"
-    
+    n1_config.ssh.insert_key = true 
+    #n1_config.vm.host_name = dhostname1
     # Two Interfaces: one for host machine access, 
     # One for dedicated replication connection
-    n1_config.vm.network :hostonly, "192.168.22.11"
-    n1_config.vm.network :hostonly, "10.1.1.31"
-    n1_config.vm.forward_port 80, 8080
+	
+    n1_config.vm.network "private_network", ip: "192.168.22.11",
+       virtualbox__intnet: "mynetwork"
+
+	n1_config.vm.network "private_network", ip: "10.1.1.31",
+       virtualbox__intnet: "mynetwork"
+
+	n1_config.vm.network "forwarded_port", guest: 80, host: 8080
+	   
     
-    n1_config.vm.host_name = dhostname1
-    n1_config.vm.customize ["modifyvm", :id, "--memory", 1024]
-    n1_config.ssh.max_tries = 100
+    
+	n1_config.vm.provider :virtualbox do |vb|
+	    vb.customize ["modifyvm", :id, "--memory", 1024, "--cpus", "2"]
+    end
+	
+	#n1_config.vm.provision "shell", :inline => <<-SHELL
+	#    apt-get update
+#		apt-get install -y puppet
+#	SHELL
+	
+    #n1_config.ssh.max_tries = 100
     #n1_config.ssh.private_key_path = "~root/root"
 
     #n1_config.vm.synced_folder "share/", "/share"
@@ -29,7 +49,8 @@ Vagrant::Config.run do |config|
     n1_config.persistent_storage.size = 5000
 
     n1_config.vm.provision :puppet do |n1_puppet|
-      n1_puppet.pp_path = "/tmp/vagrant-puppet"
+      #n1_puppet.binary = "/tmp/vagrant-puppet"
+	  n1_puppet.working_directory = "/tmp/vagrant-puppet"
       n1_puppet.module_path = "modules"
       n1_puppet.manifests_path = "manifests"
       n1_puppet.manifest_file = "site1.pp"
@@ -38,20 +59,28 @@ Vagrant::Config.run do |config|
     n1_config.vm.provision :shell, :path => "script.sh"
 
   end
-
-  config.vm.define :node2 do |n2_config|
-    n2_config.vm.box = "precise64"
-    n2_config.vm.box_url = "http://files.vagrantup.com/precise64.box"
-    
+  config.vm.define "node2" do |n2_config|
+  n2_config.ssh.insert_key = true 
+  n2_config.vm.host_name = dhostname2
+    n2_config.vm.box = "ubuntu/xenial64"
     # Two Interfaces: one for host machine access, 
-    # One for dedicated replication connection
-    n2_config.vm.network :hostonly, "192.168.22.12"
-    n2_config.vm.network :hostonly, "10.1.1.32"
-    n2_config.vm.forward_port 80, 8088
-    
-    n2_config.vm.host_name = dhostname2
-    n2_config.vm.customize ["modifyvm", :id, "--memory", 1024]
-    n2_config.ssh.max_tries = 100
+    # One for dedicated replication connection    
+	n2_config.vm.network "private_network", ip: "192.168.22.12",
+       virtualbox__intnet: "mynetwork"
+
+	n2_config.vm.network "private_network", ip: "10.1.1.32",
+       virtualbox__intnet: "mynetwork"
+
+	n2_config.vm.network "forwarded_port", guest: 80, host: 8081
+	
+		
+	
+	
+	
+    n2_config.vm.provider :virtualbox do |vb|
+	    vb.customize ["modifyvm", :id, "--memory", 1024, "--cpus", "2"]
+    end
+	#n2_config.ssh.max_tries = 100
     #n2_config.ssh.private_key_path = "~root/"
 
     #n2_config.vm.synced_folder "share/", "/share"
@@ -60,8 +89,14 @@ Vagrant::Config.run do |config|
     n2_config.persistent_storage.location = "~/development/sourcehdd2.vdi"
     n2_config.persistent_storage.size = 5000
 
+	n2_config.vm.provision "shell", :inline => <<-SHELL
+	    apt-get update
+		apt-get install -y puppet
+	SHELL
+	
     n2_config.vm.provision :puppet do |n2_puppet|
-      n2_puppet.pp_path = "/tmp/vagrant-puppet"
+      #n2_puppet.binary_path = "/tmp/vagrant-puppet"
+	  n2_puppet.working_directory = "/tmp/vagrant-puppet"
       n2_puppet.module_path = "modules"
       n2_puppet.manifests_path = "manifests"
       n2_puppet.manifest_file = "site2.pp"
